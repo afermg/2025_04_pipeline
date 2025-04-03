@@ -24,11 +24,6 @@ graph LR
     H -- Exploration and feedback --> A  
 #+end_src
 
-#+RESULTS:
-[[file:abstract_diagram.png]]
-
-
-
 #+begin_src mermaid :file real_diagram.png :css-file formatter.css :scale 4
 %%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
 graph LR
@@ -53,12 +48,3 @@ graph LR
     L --> I  
     I -- Exploration and feedback --> A  
 #+end_src
-
-#+RESULTS:
-[[file:real_diagram.png]]
-
-# #+begin_src bash
-#   for i in *.svg; do inkscape -w 1024 -h 1024 -o "${i%svg}"png; done
-# #+end_src
-
-#+RESULTS:
