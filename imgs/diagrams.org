@@ -1,6 +1,6 @@
 #+TITLE: Diagrams for presentation
 
-#+begin_src mermaid :file abstract_diagram.png :css-file test.css :scale 4
+#+begin_src mermaid :file abstract_diagram.png :css-file formatter.css :scale 4
 %%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
   
 graph LR
@@ -29,7 +29,7 @@ graph LR
 
 
 
-#+begin_src mermaid :file real_diagram.png :css-file test.css :scale 4
+#+begin_src mermaid :file real_diagram.png :css-file formatter.css :scale 4
 %%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
 graph LR
     A[(Raw Images)] --> b[Cellpose]
