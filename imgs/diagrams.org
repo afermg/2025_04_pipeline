@@ -1,0 +1,64 @@
+#+TITLE: Diagrams for presentation
+
+#+begin_src mermaid :file abstract_diagram.png :css-file test.css :scale 4
+%%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
+  
+graph LR
+    A[(Raw Images)] --> b[Segmentation]
+    b --> C[(Masks)]
+    C --> c[Measurements]
+    A --> c
+    c -->  D[(Raw Profiles)]
+    D --> E{Time series?}
+    E -- Yes --> f[Tracking] --> g[(Tracks)]
+    g --> h[Time reduction]
+    h  --> S[Signal Processing]
+    E -- No --> h 
+    S --> F[(Processed profiles)]
+    F --> Statistics --> G[(Significance)]
+    A --> H[Marimo notebooks]
+    G --> H
+    F --> H
+    F --> R[Dimensionality reduction] --> L[(Low Dim Profiles)]
+    L --> H  
+    H -- Exploration and feedback --> A  
+#+end_src
+
+#+RESULTS:
+[[file:abstract_diagram.png]]
+
+
+
+#+begin_src mermaid :file real_diagram.png :css-file test.css :scale 4
+%%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
+graph LR
+    A[(Raw Images)] --> b[Cellpose]
+    b --> C[(Masks)]
+    C --> c[cp_measure]
+    A --> c
+    c --> D[(Raw Profiles)] --> E{Time series?}
+    E -- Yes --> f[stitch3D tracking] --> T[(Tracks)] --> d[catch22]  
+    D --> d  
+    E -- No --> e[trommel] 
+    d --> e  
+    e --> F[(Processed profiles)]
+    F --> K[DuckDB] --> G[(Well-level profiles)]
+    G --> Copairs --> H[(Profile significance)]
+    G --> UMAP --> J[(Embeddings)]
+    G --> t-test --> L[(Feature significance)]  
+    A --> I[Marimo]
+    H --> I
+    G --> I
+    J --> I
+    L --> I  
+    I -- Exploration and feedback --> A  
+#+end_src
+
+#+RESULTS:
+[[file:real_diagram.png]]
+
+# #+begin_src bash
+#   for i in *.svg; do inkscape -w 1024 -h 1024 -o "${i%svg}"png; done
+# #+end_src
+
+#+RESULTS:

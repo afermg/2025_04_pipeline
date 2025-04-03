@@ -1,0 +1,76 @@
+% Created 2025-04-02 Wed 21:11
+% Intended LaTeX compiler: xelatex
+\documentclass[presentation]{beamer}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usetheme{default}
+\author{Alán F. Muñoz}
+\date{\today}
+\title{Diagrams for presentation}
+\hypersetup{
+ pdfauthor={Alán F. Muñoz},
+ pdftitle={Diagrams for presentation},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+\begin{verbatim}
+%%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
+
+graph LR
+    A[(Raw Images)] --> b[Segmentation]
+    b --> C[(Masks)]
+    C --> c[Measurements]
+    A --> c
+    c -->  D[(Raw Profiles)]
+    D --> E{Time series?}
+    E -- Yes --> f[Tracking] --> g[Tracks]
+    g --> h[Time reduction]
+    h  --> S[Signal Processing]
+    E -- No --> h 
+    S --> F[(Processed profiles)]
+    F --> Statistics --> G[(Significance)]
+    A --> H[Marimo notebooks]
+    G --> H
+    F --> H
+    F --> R[Dimensionality reduction] --> L[(Low Dim Profiles)]
+    L --> H  
+    H -- Exploration and feedback --> A  
+\end{verbatim}
+
+\begin{verbatim}
+%%{init: {'theme': 'forest',   "flowchart": {"useMaxWidth": true}}}%%
+graph LR
+    A[(Raw Images)] --> b[Cellpose]
+    b --> C[(Masks)]
+    C --> c[cp_measure]
+    A --> c
+    c --> D[(Raw Profiles)] --> E{Time series?}
+    E -- Yes --> f[stitch3D tracking] --> d[catch22]  
+    E -- No --> e[trommel] 
+    d --> e  
+    e --> F[(Processed profiles)]
+    F --> K[DuckDB] --> G[(Well-level profiles)]
+    G --> Copairs --> H[(Profile significance)]
+    G --> UMAP --> J[(Embeddings)]
+    G --> t-test --> L[(Feature significance)]  
+    A --> I[Marimo]
+    H --> I
+    G --> I
+    J --> I
+    L --> I  
+    I -- Exploration and feedback --> A  
+\end{verbatim}
+\end{document}

@@ -1,0 +1,167 @@
+#+TITLE: A tale of two assays: Bright field time lapse and Cell Painting
+#+OPTIONS: ^:nil H:2 num:t toc:1
+#+DATE: 2025/04/03
+#+Author: Alán F. Muñoz
+#+LaTeX_CLASS: beamer
+#+BEAMER_THEME: metropolis
+#+BEAMER_FRAME_LEVEL: 3
+* Introduction
+** Expected goals (based on original agreement)
+*** Original goal
+#+begin_quote
+We aim to explore and establish methods and best practices in data discovery, interpretation, visualization. We will ... adapt and implement concepts from explainable AI and spatial analysis research fields that could lead to the biological understanding of image-derived data...  
+#+end_quote
+*** Thus, the main question:
+#+begin_quote
+“How do we interpret what a given profile (e.g. of a cluster/sample) means?” 
+#+end_quote
+*** These were general terms
+** The Data
+- Bright field + time series
+  - + Model to obtain virtual staining
+- Traditional Cell Painting assay
+- Experiment with viability markers
+* defining the task
+** Challenges and constraints
+*** Problem 1: Where is the data?
+*** Problem 2: What is "the data"?
+- Who will/How to process the raw images?
+*** Problem 3: If we have to process, do we have enough compute power?
+*** Problem 4: How do we reproduce processing/analysis on their side?
+** Some software engineering considerations
+- Hacking things together vs building and documenting tools
+- How much 
+** Some context on the collaborators
+- Technically proficient in computational approaches
+- Open to "productionize" deliverables
+- Open to suggestions and exploratory new approaches
+- Deliverables can be scripts, notebooks and/or software
+** Fields for exploration
+- Interest in dynamic features from single cell
+- Interest in using deep learning methods in addition to the interpretability
+* Anatomy of a pipeline
+** Overview
+#+ATTR_LATEX: :width 1.\textwidth
+[[./imgs/abstract_diagram.png]]
+** Data ingress: How do we make it easy to access and run the analysis?
+*** Local files
+:PROPERTIES:
+:BEAMER_ENV: block
+:BEAMER_col: 0.45
+:END:
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/files.png]]
+*** Omero server
+:PROPERTIES:
+:BEAMER_ENV: block
+:BEAMER_col: 0.45
+:END:
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/omero.png]]
+Cloud providers
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/cloud.png]]
+** Image registration/corrections: How do we normalize our regions of interest?
+Image registration: "Transforming different sets of data into one coordinate system"
+*** General registration
+:PROPERTIES:
+:BEAMER_ENV: block
+:BEAMER_col: 0.35
+:END:
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/reg.jpg]]
+*** In cell microscopy
+:PROPERTIES:
+:BEAMER_ENV: block
+:BEAMER_col: 0.65
+:END:
+#+ATTR_LATEX: :width 1\textwidth
+[[./imgs/mm.png]]
+** Segmentation: Which pixels do we care about?
+Identify the pixels that characterise an object in an image.\\
+- Traditional computer vision (e.g., Watershed)
+- Deep Learning (e.g., Convolutional Neural Networks)
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/seg.png]]
+** Measurements: How do we reduce the dimensionality and size of our data?
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/measurements.png]]
+** Tracking: How do we identify individuals over time?
+#+ATTR_LATEX: :width 0.7\textwidth
+[[./imgs/track.jpg]]
+Tracking provides distinct information from standard Cell Painting: motility, division and growth.
+** Data egress: How do we format the different results of the pipeline?
+In order of importance:
+- profiles: Parquet tables
+- Other numerical data: zarr/npy
+** Orchestration: How do we minimise complexity while wrangling this mess of moving parts?
+- Turns a bunch of components into a pipeline
+** Signal processing: How do we maximise the information per experiment?
+- /catch22/: Aggregate time series data
+- /trommel/: Signal processing clean up
+** Exploration: How do we make sense of the features?
+This is an open question.
+* Results
+** Chosen stack (table)
+| Step              | Tech                   |
+|-------------------+------------------------|
+| Ingress           | Local files            |
+| Registration      | aliby                  |
+| Segmentation      | cellpose               |
+| Measurement       | cp_measure             |
+| Tracking          | cellpose's stitch3D    |
+| Egress            | Parquet+npy            |
+| Orchestration     | aliby                  |
+|-------------------+------------------------|
+| Signal processing | catch22 (ts) + trommel |
+| Exploration       | Marimo                 |
+
+** Chosen stack (diagram)
+#+ATTR_LATEX: :width 1.\textwidth
+[[./imgs/real_diagram.png]]
+** Is vanilla segmentation consistent between cyto and nuclei?
+#+ATTR_LATEX: :width 1.1\textwidth
+[[./imgs/oc.png]]
+** Cell count correlates with the second UMAP dimension
+#+ATTR_LATEX: :width 1.1\textwidth
+[[./imgs/oc.png]]
+** Bringing it all together: A Marimo interface
+Key point: Interpretation needs access to external data and the images.
+** Does virtual staining improve signals?
+They facilitate segmentation, but is likely to hallucinate intensity-related features
+* Conclusions
+** Understanding the evolution of the project
+- Though not in the initial plans, we had to work out a way to process current and incoming datasets
+- Marimo seems to be a way to provide both an exploration interface and reproducible notebooks
+** Recounting the damages
+These tools/methods were developed/expanded to further the project:
+- aliby: End-to-end pipeline for both Cell Painting and time series data
+- /cp_measure/: Cell Profiler measurements one import away
+- /trommel/: Cleans up the data
+- /marimo/ interfaces: Explore statistics and images together
+- Significant /copairs/ speed up
+- Fast and scalable per-feature p value calculation
+** The new(ish) toys that I have found very useful (in no particular order)
+- marimo: Jupyter notebooks on steroids
+- duckdb: SQL on steroids
+- dask: Small data, big data? It doesn't care either way
+- ThreadPoolExecutor: Speed up python code, the easy way
+** Pending work
+[[./imgs/nowwhat.jpg]]
+** Pending work
+- Adding masks and tracks to marimo for quality control
+- Add port-based steps to avoid dependency bankrupcy
+- Refine workflow for biological exploration
+- Speed up =cp_measure=?
+** Pending work
+- Deeper comparison of Cell Painting and time series datasets
+- Combine cytosol and nuclei information to find "the one true cell"
+- Develop a sensible cell count correction method that works on small datasets
+** Pending work
+[[./imgs/unmask.jpg]]
+** Technical things learned so far
+- There is no place like =~=: Local first to distributed is easier than the reverse
+- Pipelines are not just functions stitched together, consider how/who will deal with the output and consciously choose the internals to expose
+- Keep the raw and processed data close to the compute (and to your heart)
+- Reuse tools as much as possible, it saves time and reduces dull work (if you like tools)
+** Questions?
