@@ -1,4 +1,4 @@
-#+TITLE: An end-to-end workflow for both Cell Painting and time lapse assays
+#+TITLE: An end-to-end workflow for Cell Painting and time lapse assays
 #+OPTIONS: ^:nil H:2 num:t toc:1
 #+DATE: 2025/04/03
 #+Author: Alán F. Muñoz
@@ -6,7 +6,7 @@
 #+BEAMER_THEME: metropolis
 #+BEAMER_FRAME_LEVEL: 3
 * Introduction
-** Expected goals (based on original agreement)
+** Original expected goals 
 *** Original goal
 #+begin_quote
 We aim to explore and establish methods and best practices in data discovery, interpretation, visualization. We will ... adapt and implement concepts from explainable AI and spatial analysis research fields that could lead to the biological understanding of image-derived data...  
@@ -47,7 +47,6 @@ We aim to explore and establish methods and best practices in data discovery, in
 - What are the best practices to facilitate processing and interpretability of microscopy data?
 - Can we extract dynamic (time) features from single cell measurements?
 - Could they reduce costs/increase throughput by using time series in addition or replacement of Cell Painting?
-- How do we interpret biological 
 - How do we leverage deep learning features in addition to traditional measurements?
 ** How can we compare the two assays if they are studied in different ways?
 If we are to compare bright field time lapses to cell painting data we need a common framework in which both assays are processed 
@@ -162,19 +161,21 @@ Key point: Biological interpretation greatly benefits from access to processed a
 ** Feature selection and stats help, but could be improved upon
 #+ATTR_LATEX: :width 0.7\textwidth
 [[./imgs/clustermap_pvals.png]]
-** Current estimates (190 cores, ~150 GB RAM):
+** Current time estimates (190 cores, ~150 GB RAM):
+  #+begin_table
+#+latex: \resizebox{0.9\columnwidth}{!}{%
+| Assay   | Ch | TP | Obj | Time (h) | #FoV completed | FoV/h | (FoV,Tp,Ch)/h |
+|---------+----+----+-----+----------+----------------+-------+---------------|
+| CP      |  6 |  1 |   2 |     26.6 | 1920 (all)     |  72.0 |           432 |
+| TS + VS | 20 |  2 |   2 |     49.0 | 109 (~5%)      |   2.2 |            89 |
+|---------+----+----+-----+----------+----------------+-------+---------------|
+#+latex: %
+#+latex: }
+#+end_table   
 (metrics calculated without radial, granularity or zernike)
-  
-| Assay            | #Ch | #TP | #Obj | Time (h) | #FoV completed | FoV/h | (FoV,Tp,Ch)/h |
-|------------------+-----+-----+------+----------+----------------+-------+---------------|
-| Cell Painting    |   6 |   1 |    2 |     26.6 | 1920 (all)     |  72.0 |           432 |
-| Time Series + VS |   2 |  20 |    2 |     49.0 | 109 (~5%)      |   2.2 |            89 |
-|------------------+-----+-----+------+----------+----------------+-------+---------------|
-
-The last column hints at additional slow-down coming from multiple time points.
 
 ** The current bottleneck are the measurements (and cellpose)
-
+For a given pipeline with 6 channels, 2 objects and 1 time point:
 | Module              | % of time |
 |---------------------+-----------|
 | Granularity         |     72.0% |
@@ -217,10 +218,10 @@ The last column hints at additional slow-down coming from multiple time points.
 :PROPERTIES:
 :BEAMER_act: [<+->]
 :END:
-- Run entire time series dataset
+- Move segmentation to the GPU.
+- Process all time series datasets
 - Adding masks and tracks to marimo for quality control
 - Add port-based steps to avoid dependency bankrupcy
-- Just segment using the GPU, duh.
 - Refine workflow for biological exploration
 ** Pending work
 :PROPERTIES:
@@ -244,3 +245,4 @@ The last column hints at additional slow-down coming from multiple time points.
 ** That's all folks
 Thanks for you attention.
 Questions?
+
