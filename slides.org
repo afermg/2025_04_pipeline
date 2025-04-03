@@ -1,4 +1,4 @@
-#+TITLE: A tale of two assays: Bright field time lapse and Cell Painting
+#+TITLE: An end-to-end workflow for both Cell Painting and time lapse assays
 #+OPTIONS: ^:nil H:2 num:t toc:1
 #+DATE: 2025/04/03
 #+Author: Alán F. Muñoz
@@ -17,28 +17,54 @@ We aim to explore and establish methods and best practices in data discovery, in
 #+end_quote
 *** These were general terms
 ** The Data
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
 - Bright field + time series
   - + Model to obtain virtual staining
 - Traditional Cell Painting assay
 - Experiment with viability markers
-* defining the task
-** Challenges and constraints
-*** Problem 1: Where is the data?
-*** Problem 2: What is "the data"?
-- Who will/How to process the raw images?
-*** Problem 3: If we have to process, do we have enough compute power?
-*** Problem 4: How do we reproduce processing/analysis on their side?
-** Some software engineering considerations
-- Hacking things together vs building and documenting tools
-- How much 
+* Defining the task
 ** Some context on the collaborators
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
 - Technically proficient in computational approaches
 - Open to "productionize" deliverables
 - Open to suggestions and exploratory new approaches
 - Deliverables can be scripts, notebooks and/or software
-** Fields for exploration
-- Interest in dynamic features from single cell
-- Interest in using deep learning methods in addition to the interpretability
+** Some software engineering considerations
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- Should we build new pipelines or reuse existing ones? Which is more valuable for the collaboration?
+- Hacking things together vs building and documenting tools
+- If building, how are we going to integrate it into their workflows?
+** After further discussion we agreed on a set of more tangible goals
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- What are the best practices to facilitate processing and interpretability of microscopy data?
+- Can we extract dynamic (time) features from single cell measurements?
+- Could they reduce costs/increase throughput by using time series in addition or replacement of Cell Painting?
+- How do we interpret biological 
+- How do we leverage deep learning features in addition to traditional measurements?
+** How can we compare the two assays if they are studied in different ways?
+If we are to compare bright field time lapses to cell painting data we need a common framework in which both assays are processed 
+** Challenges and constraints
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+*** Problem 1: Where is the data? What size is it?
+On their GCP storage. ~2.5Tb/experiment, 4 experiments so far
+*** Problem 2: What is "the data"?
+Who will/How to process the raw images?
+*** Problem 3: If we have to process, do we have enough compute power?
+GCP & Slurm vs AWS/DGX
+*** Problem 4: How do we reproduce processing/analysis on their infrastructure? 
+** Even getting the data can be a problem
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/taken_data.jpg]]
 * Anatomy of a pipeline
 ** Overview
 #+ATTR_LATEX: :width 1.\textwidth
@@ -79,7 +105,7 @@ Image registration: "Transforming different sets of data into one coordinate sys
 [[./imgs/mm.png]]
 ** Segmentation: Which pixels do we care about?
 Identify the pixels that characterise an object in an image.\\
-- Traditional computer vision (e.g., Watershed)
+- Traditional computer vision (e.g., Watershed methods)
 - Deep Learning (e.g., Convolutional Neural Networks)
 #+ATTR_LATEX: :width 0.9\textwidth
 [[./imgs/seg.png]]
@@ -91,16 +117,19 @@ Identify the pixels that characterise an object in an image.\\
 [[./imgs/track.jpg]]
 Tracking provides distinct information from standard Cell Painting: motility, division and growth.
 ** Data egress: How do we format the different results of the pipeline?
-In order of importance:
+Low-stakes decision, but still important to choose wisely:
 - profiles: Parquet tables
 - Other numerical data: zarr/npy
 ** Orchestration: How do we minimise complexity while wrangling this mess of moving parts?
-- Turns a bunch of components into a pipeline
+- Turns a bunch of components into a pipeline.
+- Are pipelines actually good?
 ** Signal processing: How do we maximise the information per experiment?
 - /catch22/: Aggregate time series data
 - /trommel/: Signal processing clean up
 ** Exploration: How do we make sense of the features?
 This is an open question.
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/jump_rr.png]]
 * Results
 ** Chosen stack (table)
 | Step              | Tech                   |
@@ -120,48 +149,98 @@ This is an open question.
 #+ATTR_LATEX: :width 1.\textwidth
 [[./imgs/real_diagram.png]]
 ** Is vanilla segmentation consistent between cyto and nuclei?
-#+ATTR_LATEX: :width 1.1\textwidth
+#+ATTR_LATEX: :width 0.9\textwidth
 [[./imgs/oc.png]]
-** Cell count correlates with the second UMAP dimension
-#+ATTR_LATEX: :width 1.1\textwidth
-[[./imgs/oc.png]]
+** Cell count correlates is a strong determinant of signal
+#+ATTR_LATEX: :width 0.9\textwidth
+[[./imgs/marimo_umap_vs_ncyto.png]]
 ** Bringing it all together: A Marimo interface
-Key point: Interpretation needs access to external data and the images.
-** Does virtual staining improve signals?
-They facilitate segmentation, but is likely to hallucinate intensity-related features
+Key point: Biological interpretation greatly benefits from access to processed and raw images.
+** The data could benefit from adjustments
+#+ATTR_LATEX: :width 0.6\textwidth
+[[./imgs/clustermap_features.png]]
+** Feature selection and stats help, but could be improved upon
+#+ATTR_LATEX: :width 0.7\textwidth
+[[./imgs/clustermap_pvals.png]]
+** Current estimates (190 cores, ~150 GB RAM):
+(metrics calculated without radial, granularity or zernike)
+  
+| Assay            | #Ch | #TP | #Obj | Time (h) | #FoV completed | FoV/h | (FoV,Tp,Ch)/h |
+|------------------+-----+-----+------+----------+----------------+-------+---------------|
+| Cell Painting    |   6 |   1 |    2 |     26.6 | 1920 (all)     |  72.0 |           432 |
+| Time Series + VS |   2 |  20 |    2 |     49.0 | 109 (~5%)      |   2.2 |            89 |
+|------------------+-----+-----+------+----------+----------------+-------+---------------|
+
+The last column hints at additional slow-down coming from multiple time points.
+
+** The current bottleneck are the measurements (and cellpose)
+
+| Module              | % of time |
+|---------------------+-----------|
+| Granularity         |     72.0% |
+| Zernike             |      7.7% |
+| CellPose (Threaded) |      6.0% |
+| Radial Distribution |      3.4% |
+|---------------------+-----------|
+
 * Conclusions
 ** Understanding the evolution of the project
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
 - Though not in the initial plans, we had to work out a way to process current and incoming datasets
 - Marimo seems to be a way to provide both an exploration interface and reproducible notebooks
-** Recounting the damages
-These tools/methods were developed/expanded to further the project:
-- aliby: End-to-end pipeline for both Cell Painting and time series data
+- Vanilla cellpose, though resulting from a noisier cytosolic segmentation, seems a viable option in the stack
+  
+** Tools/methods were developed/expanded to further the project
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- /aliby/: End-to-end pipeline for both Cell Painting and time series data
 - /cp_measure/: Cell Profiler measurements one import away
 - /trommel/: Cleans up the data
 - /marimo/ interfaces: Explore statistics and images together
 - Significant /copairs/ speed up
 - Fast and scalable per-feature p value calculation
-** The new(ish) toys that I have found very useful (in no particular order)
-- marimo: Jupyter notebooks on steroids
-- duckdb: SQL on steroids
-- dask: Small data, big data? It doesn't care either way
-- ThreadPoolExecutor: Speed up python code, the easy way
+** The new(ish) toys that I have found very useful
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- /marimo/: Jupyter notebooks the done right
+- /duckdb/: SQL on steroids
+- /dask/: Small data, big data? Doesn't make a difference?
+- /ThreadPoolExecutor/: Speed up python code, the easy way
 ** Pending work
+#+ATTR_LATEX: :width 1.\textwidth
 [[./imgs/nowwhat.jpg]]
 ** Pending work
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- Run entire time series dataset
 - Adding masks and tracks to marimo for quality control
 - Add port-based steps to avoid dependency bankrupcy
+- Just segment using the GPU, duh.
 - Refine workflow for biological exploration
+** Pending work
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
 - Speed up =cp_measure=?
-** Pending work
 - Deeper comparison of Cell Painting and time series datasets
-- Combine cytosol and nuclei information to find "the one true cell"
 - Develop a sensible cell count correction method that works on small datasets
+- Combine cytosol and nuclei information to find "the one true cell"
 ** Pending work
+#+ATTR_LATEX: :width 0.4\textwidth
 [[./imgs/unmask.jpg]]
 ** Technical things learned so far
-- There is no place like =~=: Local first to distributed is easier than the reverse
+:PROPERTIES:
+:BEAMER_act: [<+->]
+:END:
+- Local first -> distributed is easier than the other way around
 - Pipelines are not just functions stitched together, consider how/who will deal with the output and consciously choose the internals to expose
-- Keep the raw and processed data close to the compute (and to your heart)
+- Keep the raw and processed data close to the compute
 - Reuse tools as much as possible, it saves time and reduces dull work (if you like tools)
-** Questions?
+** That's all folks
+Thanks for you attention.
+Questions?
